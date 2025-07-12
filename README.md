@@ -7,7 +7,7 @@ PopOff is a short form video social media mobile app designed to replicate the c
 
 > This is the frontend repository, find the backend repository here: https://github.com/Carson-Stark/PopOffBackend
 
-## Features
+### Features
 - User account creation and authentication
 - Home page with scrollable feed of vertical videos posted by other users
 - Likes and comments on each post
@@ -17,6 +17,11 @@ PopOff is a short form video social media mobile app designed to replicate the c
 - Intelligent recommendation algorithm that learns user interests
 - Search page to find accounts
 - Ability to block users and report posts
+
+### Project Timeline
+
+- **Started:** January 2025  
+- **Completed:** May 2025
 
 ## Videos
 
@@ -33,7 +38,7 @@ https://github.com/user-attachments/assets/d6255bad-26f2-402e-b5ad-174d4d484bc2
 ### Prerequisites
 - Node.js and npm installed. You can download them from https://nodejs.org/.
 - Expo CLI installed globally (`npm install -g expo-cli`)
-- Backend server running locally or on the cloud (see linked [backend repository](https://github.com/Carson-Stark/PopOffBackend))
+- Backend server running locally or on the cloud (see linked [backend repository](https://github.com/Carson-Stark/PopOffBackend) for instructions)
 
 ### Installation Steps
 1. Clone the repository:
