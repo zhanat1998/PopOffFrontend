@@ -81,3 +81,6 @@ yarn-error.*
 ios/
 *.ipa
 .aab
+
+# IDE
+.idea/
