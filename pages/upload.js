@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, Alert, Image, StyleSheet, Acti
 import PrimaryStyles from '../styles/primaryStyles';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
-import { FFmpegKit } from 'ffmpeg-kit-react-native';
 import * as FileSystem from 'expo-file-system';
 import { Ionicons } from "@expo/vector-icons";
 import { KeyboardAvoidingView } from 'react-native';
@@ -11,6 +10,7 @@ import { SafeAreaView } from 'react-native';
 import { TouchableWithoutFeedback } from 'react-native';
 import { Keyboard } from 'react-native';
 import { Platform } from 'react-native';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 
 
 const UploadScreen = () => {
@@ -35,24 +35,17 @@ const UploadScreen = () => {
     }, [asset.uri]);
 
     const generateThumbnail = async (fileUri) => {
-
         try {
-
-            const thumbnailUri = `${FileSystem.cacheDirectory}thumbnail.jpg`;
-            const fileInfo = await FileSystem.getInfoAsync(thumbnailUri);
-            if (fileInfo.exists) {
-                await FileSystem.deleteAsync(thumbnailUri, { idempotent: true });
-            }
-            const localThumbnailPath = thumbnailUri.replace('file://', '');
-            const command = `-y -i "${fileUri}" -ss 00:00:01 -frames:v 1 -update 1 -q:v 2 "${thumbnailUri}"`;
-            const session = await FFmpegKit.execute(command);       
-
-            const returnCode = await session.getReturnCode();
-            console.log('Thumbnail generated at:', thumbnailUri);
-            setThumbnailUri(`${thumbnailUri}?t=${Date.now()}`);
-
+            const { uri } = await VideoThumbnails.getThumbnailAsync(fileUri, {
+                time: 1000, // 1 second
+                quality: 0.7,
+            });
+            console.log('Thumbnail generated at:', uri);
+            setThumbnailUri(uri);
         } catch (error) {
             console.error('Error generating thumbnail:', error);
+            // Fallback to placeholder if thumbnail generation fails
+            setThumbnailUri("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFSxxoFebm4n0mxtfXApVZ2_bqbAJIDTiYug&s");
         }
     };
 

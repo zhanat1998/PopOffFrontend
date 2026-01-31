@@ -35,13 +35,7 @@
     },
     "plugins": [
       "expo-video",
-      "expo-secure-store",
-      [
-        "@config-plugins/ffmpeg-kit-react-native",
-        {
-          "podspecUrl": "https://raw.githubusercontent.com/luthviar/ffmpeg-kit-ios-full/main/ffmpeg-kit-ios-full.podspec"
-        }
-      ]
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

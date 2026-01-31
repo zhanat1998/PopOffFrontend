@@ -12,8 +12,7 @@ import { SafeAreaView } from 'react-native';
 import { InteractionManager } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import Share from 'react-native-share';
-import RNFS from 'react-native-fs';
-import { FFmpegKit, FFmpegKitConfig, ReturnCode } from 'ffmpeg-kit-react-native';
+import RNFS from '@dr.pogodin/react-native-fs';
 import * as Progress from 'react-native-progress'; // if not already
 import * as MediaLibrary from 'expo-media-library';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
@@ -131,106 +130,13 @@ const VideoItem = memo(({ item, isActive, style, updateStats = null, setComments
         setShareDrawerVisible(false);
     };
 
-    const getPlaylistDurationSec = async (url) => {
-        const probeCmd = `-i "${url}" -show_entries format=duration -v quiet -of csv="p=0"`;
-        const probe = await FFmpegKit.executeAsync(probeCmd);
-        const out = (await probe.getOutput())?.trim();
-        const dur = parseFloat(out);
-        return isNaN(dur) ? null : dur;            // seconds
-    };
-
-    useEffect(() => {
-    if (downloadVisible) {
-        // yield one render frame first
-        setTimeout(() => {
-        runDownload();
-        }, 100); // 1 frame delay lets modal show
-    }
-    }, [downloadVisible]);
-
-    const cancelDownload = () => {
-        setIsDownloadCanceled(true);
-        FFmpegKit.cancel(); // Cancel the FFmpeg process
-        setDownloadVisible(false);
-    };
-
     const runDownload = async () => {
-        const m3u8Url = item.link;
-        const tempPath = `${FileSystem.documentDirectory}video.mp4`;
-
-        setIsDownloadCanceled(false); // Reset cancellation state
-
-        InteractionManager.runAfterInteractions(async () => {
-            try {
-                await FileSystem.deleteAsync(tempPath, { idempotent: true });
-            } catch { }
-
-            const duration = item.length || 1;
-            console.log("Playlist duration:", duration);   
-
-            console.log('File path valid:', await FileSystem.getInfoAsync(FileSystem.documentDirectory));
-
-            FFmpegKitConfig.enableStatisticsCallback((stats) => {
-                if (isDownloadCanceled) return; // Stop updating progress if canceled
-
-                const tMs = stats.getTime();
-                const ratio = duration ? Math.min(tMs / (duration), 1) : 0;
-                setDownloadProgress(ratio);
-                console.log("Download progress:", ratio);
-            });
-
-            const command = `-i "${m3u8Url}" -c copy "${tempPath}"`;
-
-            try {
-                console.log("Running FFmpeg command:", command);
-                const session = await FFmpegKit.execute(command);
-                const rc = await session.getReturnCode();
-
-                if (isDownloadCanceled) return; // Exit if canceled
-
-                if (!ReturnCode.isSuccess(rc)) {
-                    console.log('FFmpegKit error:', rc);
-                    setDownloadVisible(false);
-                    Alert.alert('Error', 'Failed to download the video.');
-                    return;
-                }
-
-                const { status } = await MediaLibrary.requestPermissionsAsync();
-                if (status !== 'granted') {
-                    setDownloadVisible(false);
-                    Alert.alert('Permission denied', 'Cannot save video without Photos / Media access.');
-                    return;
-                }
-
-                console.log('Video downloaded to:', tempPath);
-
-                try {
-                    const asset = await MediaLibrary.createAssetAsync(tempPath);
-                    const album = await MediaLibrary.getAlbumAsync('PopOff');
-                    if (album) {
-                        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-                    } else {
-                        await MediaLibrary.createAlbumAsync('PopOff', asset, false);
-                    }
-
-                    Alert.alert('Success', 'Video saved to your Photos Gallery.');
-                } catch (e) {
-                    console.error('MediaLibrary error:', e);
-                    Alert.alert('Error', 'Downloaded, but could not save to gallery.');
-                }
-
-                setDownloadVisible(false);
-                FFmpegKitConfig.disableStatisticsCallback();
-            } catch (err) {
-                FFmpegKitConfig.disableStatisticsCallback();
-                if (!isDownloadCanceled) {
-                    FFmpegKitConfig.disableStatisticsCallback();
-                    console.error('FFmpegKit exception', err);
-                    setDownloadVisible(false);
-                    Alert.alert('Exception', err.message);
-                }
-            }
-        });
+        Alert.alert(
+            'Download Not Available',
+            'Video download feature is currently under development. Please check back later!',
+            [{ text: 'OK' }]
+        );
+        setDownloadVisible(false);
     };
 
     // Helper to block a user
@@ -270,8 +176,7 @@ const VideoItem = memo(({ item, isActive, style, updateStats = null, setComments
             Alert.alert('Link copied!');
             closeShareDrawer();
         } else if (type === 'download') {
-            setDownloadProgress(0);
-            setDownloadVisible(true);
+            runDownload();
             closeShareDrawer();
         } else if (type === 'report') {
             Alert.alert(
