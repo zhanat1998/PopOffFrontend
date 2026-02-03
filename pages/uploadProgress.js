@@ -52,6 +52,7 @@ const UploadProgressScreen = () => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 300000, // 5 минут timeout видео upload үчүн
         onUploadProgress: (progressEvent) => {
           if (isCancelledRef.current) return;
           const percentCompleted = progressEvent.loaded / progressEvent.total;
