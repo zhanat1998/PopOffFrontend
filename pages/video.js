@@ -11,11 +11,8 @@ import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native';
 import { InteractionManager } from 'react-native';
 import * as FileSystem from 'expo-file-system';
-import Share from 'react-native-share';
-import RNFS from '@dr.pogodin/react-native-fs';
-import * as Progress from 'react-native-progress'; // if not already
+import * as Progress from 'react-native-progress';
 import * as MediaLibrary from 'expo-media-library';
-import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 
 const VideoItem = memo(({ item, isActive, style, updateStats = null, setCommentsOpen = null }) => {
     const player = useVideoPlayer(item.link, (player) => {
