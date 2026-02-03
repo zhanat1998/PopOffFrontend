@@ -17,6 +17,7 @@
     "@react-navigation/stack": "^6.3.16",
     "@reduxjs/toolkit": "^2.5.0",
     "axios": "^1.9.0",
+    "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.1",
     "expo": "~54.0.33",
     "expo-av": "~16.0.8",
