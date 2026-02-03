@@ -24,7 +24,7 @@ export default function App() {
     console.log('Backend URL:', axios.defaults.baseURL);
     // Render.com cold start үчүн 30 секунд timeout
     axios.defaults.timeout = API_TIMEOUT ? parseInt(API_TIMEOUT) : 30000;
-    axios.defaults.headers.common['content-type'] = 'multipart/form-data';
+    // Content-Type автоматтык - axios өзү туура тандайт
   }, []);
 
   return (
