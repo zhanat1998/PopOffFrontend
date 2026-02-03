@@ -136,6 +136,12 @@ const VideoItem = memo(({ item, isActive, style, updateStats = null, setComments
         setDownloadVisible(false);
     };
 
+    const cancelDownload = () => {
+        setIsDownloadCanceled(true);
+        setDownloadVisible(false);
+        setDownloadProgress(null);
+    };
+
     // Helper to block a user
     const blockUser = async () => {
         try {

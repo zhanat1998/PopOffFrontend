@@ -8,7 +8,7 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import NavigationBarColor from 'react-native-navigation-bar-color';
-import { BACKEND_URL, API_TIMEOUT } from '@env';
+import { BACKEND_URL } from '@env';
 
 // Fallback URL for production builds when .env is not available
 const PRODUCTION_BACKEND_URL = 'https://popoffbackend.onrender.com/api';
@@ -20,11 +20,8 @@ export default function App() {
   useEffect(() => {
     // Backend URL .env файлдан алынат, же production fallback
     axios.defaults.baseURL = BACKEND_URL || PRODUCTION_BACKEND_URL;
-
+    axios.defaults.timeout = 0; // Timeout жок - UptimeRobot сервер дайыма ойгок
     console.log('Backend URL:', axios.defaults.baseURL);
-    // Render.com cold start үчүн 30 секунд timeout
-    axios.defaults.timeout = API_TIMEOUT ? parseInt(API_TIMEOUT) : 30000;
-    // Content-Type автоматтык - axios өзү туура тандайт
   }, []);
 
   return (
