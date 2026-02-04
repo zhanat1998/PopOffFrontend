@@ -122,6 +122,17 @@ const ProfileView = ({ user }) => {
                 )
             )}
 
+            {/* Сатуучу болуу баскычы (өз профилинде гана) */}
+            {user == "" && (
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('SellerDashboard')}
+                    style={styles.sellerButton}
+                >
+                    <Ionicons name="storefront-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.sellerButtonText}>Сатуучу болуу</Text>
+                </TouchableOpacity>
+            )}
+
             {loading && posts.length === 0 ? (
                 // Show ActivityIndicator when loading and posts are empty
                 <ActivityIndicator size="large" color="black" style={styles.loadingIndicator} />
@@ -234,6 +245,20 @@ const styles = StyleSheet.create({
     statLabel: {
         fontSize: 14,
         color: 'white',
+    },
+    sellerButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ff4757',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 25,
+        marginTop: 10,
+    },
+    sellerButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 'bold',
     },
 });
 
