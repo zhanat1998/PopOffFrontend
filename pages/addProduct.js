@@ -21,6 +21,7 @@ import axios from "axios";
 const AddProduct = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Форма
   const [title, setTitle] = useState("");
@@ -30,6 +31,7 @@ const AddProduct = () => {
   const [stock, setStock] = useState("");
   const [images, setImages] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [aiUsed, setAiUsed] = useState(false);
 
   // Категориялар
   const categories = [
@@ -41,6 +43,36 @@ const AddProduct = () => {
     { id: 6, name: "Башка", icon: "grid-outline" },
   ];
 
+  // AI менен сүрөттү анализдөө
+  const analyzeWithAI = async (imageUri) => {
+    setAiLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", {
+        uri: imageUri,
+        type: "image/jpeg",
+        name: "product.jpg",
+      });
+
+      const response = await axios.post("/ai/analyze-product/", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        transformRequest: (data, headers) => formData,
+        timeout: 30000,
+      });
+
+      const data = response.data;
+      if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
+      if (data.category_id) setSelectedCategory(data.category_id);
+      setAiUsed(true);
+    } catch (error) {
+      console.log("AI error:", error.response?.data || error.message);
+      // AI иштебесе, колдонуучу өзү толтурат
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   // Сүрөт тандоо
   const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -51,7 +83,13 @@ const AddProduct = () => {
     });
 
     if (!result.canceled) {
-      setImages([...images, ...result.assets.map((a) => a.uri)]);
+      const newImages = result.assets.map((a) => a.uri);
+      setImages([...images, ...newImages]);
+
+      // Биринчи сүрөт кошулганда AI анализ жүргүзүү
+      if (images.length === 0 && newImages.length > 0 && !aiUsed) {
+        analyzeWithAI(newImages[0]);
+      }
     }
   };
 
@@ -98,7 +136,6 @@ const AddProduct = () => {
         });
       });
 
-      // Authorization header менен жөнөтүү
       const response = await axios.post("/seller/products/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -131,7 +168,7 @@ const AddProduct = () => {
         <TouchableOpacity
           style={[styles.saveButton, loading && styles.saveButtonDisabled]}
           onPress={saveProduct}
-          disabled={loading}
+          disabled={loading || aiLoading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" size="small" />
@@ -149,6 +186,9 @@ const AddProduct = () => {
           {/* Сүрөттөр */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Сүрөттөр *</Text>
+            <Text style={styles.sectionHint}>
+              Сүрөт кошуңуз — AI автоматтык аталыш жана сүрөттөмө жазат
+            </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.imagesContainer}>
                 {images.map((uri, index) => (
@@ -178,6 +218,28 @@ const AddProduct = () => {
               </View>
             </ScrollView>
           </View>
+
+          {/* AI Loading */}
+          {aiLoading && (
+            <View style={styles.aiLoadingContainer}>
+              <View style={styles.aiLoadingContent}>
+                <ActivityIndicator size="small" color="#7c3aed" />
+                <Text style={styles.aiLoadingText}>
+                  AI анализдеп жатат...
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* AI толтурганын көрсөтүү */}
+          {aiUsed && !aiLoading && (
+            <View style={styles.aiBadgeContainer}>
+              <View style={styles.aiBadge}>
+                <Ionicons name="sparkles" size={16} color="#7c3aed" />
+                <Text style={styles.aiBadgeText}>AI толтурду — оңдой аласыз</Text>
+              </View>
+            </View>
+          )}
 
           {/* Негизги маалымат */}
           <View style={styles.section}>
@@ -251,7 +313,7 @@ const AddProduct = () => {
                     keyboardType="numeric"
                     placeholderTextColor="#999"
                   />
-                  <Text style={styles.currencyText}>₽</Text>
+                  <Text style={styles.currencyText}>сом</Text>
                 </View>
               </View>
 
@@ -266,7 +328,7 @@ const AddProduct = () => {
                     keyboardType="numeric"
                     placeholderTextColor="#999"
                   />
-                  <Text style={styles.currencyText}>₽</Text>
+                  <Text style={styles.currencyText}>сом</Text>
                 </View>
               </View>
             </View>
@@ -348,6 +410,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
+    marginBottom: 4,
+  },
+  sectionHint: {
+    fontSize: 13,
+    color: "#999",
     marginBottom: 12,
   },
   label: {
@@ -426,6 +493,47 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  // AI Loading
+  aiLoadingContainer: {
+    backgroundColor: "#fff",
+    marginTop: 10,
+    padding: 16,
+  },
+  aiLoadingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f3f0ff",
+    padding: 14,
+    borderRadius: 12,
+  },
+  aiLoadingText: {
+    marginLeft: 12,
+    fontSize: 14,
+    color: "#7c3aed",
+    fontWeight: "500",
+  },
+
+  // AI Badge
+  aiBadgeContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+  aiBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f3f0ff",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+  },
+  aiBadgeText: {
+    marginLeft: 6,
+    fontSize: 13,
+    color: "#7c3aed",
+    fontWeight: "500",
+  },
+
   // Категориялар
   categoriesGrid: {
     flexDirection: "row",
@@ -479,7 +587,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   currencyText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#999",
   },
