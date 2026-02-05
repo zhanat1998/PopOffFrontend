@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import * as VideoThumbnails from "expo-video-thumbnails";
 import axios from "axios";
 
 const AddProduct = () => {
@@ -32,6 +33,8 @@ const AddProduct = () => {
   const [images, setImages] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [aiUsed, setAiUsed] = useState(false);
+  const [video, setVideo] = useState(null); // { uri, duration, width, height, fileSize }
+  const [videoThumbnail, setVideoThumbnail] = useState(null);
 
   // Категориялар
   const categories = [
@@ -98,6 +101,48 @@ const AddProduct = () => {
     setImages(images.filter((_, i) => i !== index));
   };
 
+  // Видео тандоо
+  const pickVideo = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["videos"],
+      allowsMultipleSelection: false,
+      videoExportPreset: ImagePicker.VideoExportPreset.H264_1920x1080,
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+
+      if (asset.duration > 60000) {
+        Alert.alert("Ката", "Видео 60 секунддан ашпашы керек");
+        return;
+      }
+
+      setVideo({
+        uri: asset.uri,
+        duration: asset.duration,
+        width: asset.width || 1080,
+        height: asset.height || 1920,
+        fileSize: asset.fileSize || 0,
+      });
+
+      try {
+        const { uri } = await VideoThumbnails.getThumbnailAsync(asset.uri, {
+          time: 1000,
+          quality: 0.7,
+        });
+        setVideoThumbnail(uri);
+      } catch (e) {
+        console.log("Thumbnail error:", e);
+      }
+    }
+  };
+
+  const removeVideo = () => {
+    setVideo(null);
+    setVideoThumbnail(null);
+  };
+
   // Товар сактоо
   const saveProduct = async () => {
     // Валидация
@@ -136,6 +181,28 @@ const AddProduct = () => {
         });
       });
 
+      // Видео кошуу (эгер бар болсо)
+      if (video) {
+        const videoFileName = video.uri.split("/").pop();
+        formData.append("video", {
+          uri: video.uri,
+          type: "video/mp4",
+          name: videoFileName,
+        });
+        formData.append("video_duration", String(video.duration / 1000)); // мс → сек
+        formData.append("video_width", String(video.width));
+        formData.append("video_height", String(video.height));
+        formData.append("video_size", String(video.fileSize));
+
+        if (videoThumbnail) {
+          formData.append("video_thumbnail", {
+            uri: videoThumbnail,
+            type: "image/jpeg",
+            name: "video_thumb.jpg",
+          });
+        }
+      }
+
       const response = await axios.post("/seller/products/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -143,6 +210,7 @@ const AddProduct = () => {
         transformRequest: (data, headers) => {
           return formData;
         },
+        timeout: 300000, // 5 мүнөт (видео жүктөө үчүн)
       });
 
       Alert.alert("Ийгилик!", "Товар кошулду", [
@@ -217,6 +285,38 @@ const AddProduct = () => {
                 )}
               </View>
             </ScrollView>
+          </View>
+
+          {/* Видео */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Видео</Text>
+            <Text style={styles.sectionHint}>
+              Товардын видеосу Reels фидде көрүнөт (макс. 60 сек)
+            </Text>
+
+            {video ? (
+              <View style={styles.videoPreviewContainer}>
+                {videoThumbnail && (
+                  <Image source={{ uri: videoThumbnail }} style={styles.videoThumbnail} />
+                )}
+                <View style={styles.videoPlayOverlay}>
+                  <Ionicons name="play-circle" size={40} color="rgba(255,255,255,0.9)" />
+                </View>
+                <TouchableOpacity style={styles.removeVideoButton} onPress={removeVideo}>
+                  <Ionicons name="close-circle" size={24} color="#ff4757" />
+                </TouchableOpacity>
+                <View style={styles.videoDurationBadge}>
+                  <Text style={styles.videoDurationText}>
+                    {Math.round(video.duration / 1000)}с
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.addVideoButton} onPress={pickVideo}>
+                <Ionicons name="videocam" size={32} color="#999" />
+                <Text style={styles.addImageText}>Видео кошуу</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* AI Loading */}
@@ -605,6 +705,62 @@ const styles = StyleSheet.create({
     color: "#ff4757",
     fontWeight: "600",
     marginLeft: 6,
+  },
+
+  // Видео
+  videoPreviewContainer: {
+    width: 140,
+    height: 180,
+    borderRadius: 10,
+    overflow: "hidden",
+    position: "relative",
+    backgroundColor: "#000",
+  },
+  videoThumbnail: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  videoPlayOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.2)",
+  },
+  removeVideoButton: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+  },
+  videoDurationBadge: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  videoDurationText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  addVideoButton: {
+    width: 140,
+    height: 180,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "#ddd",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

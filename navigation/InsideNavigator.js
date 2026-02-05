@@ -18,6 +18,7 @@ import UserPreferences from "../pages/userPreferences";
 import SalePage from "../pages/salePage";
 import SellerDashboard from "../pages/sellerDashboard";
 import AddProduct from "../pages/addProduct";
+import ProductDetail from "../pages/productDetail";
 
 // Навигаторы
 const Tab = createBottomTabNavigator();
@@ -29,6 +30,7 @@ const HomeStack = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomePage" component={HomePage} />
       <Stack.Screen name="Search" component={SearchPage} />
+      <Stack.Screen name="ProductDetail" component={ProductDetail} />
     </Stack.Navigator>
   );
 };
@@ -41,6 +43,7 @@ const ReelsStack = () => {
       <Stack.Screen name="FeedProfile" component={FeedProfile} />
       <Stack.Screen name="Post" component={PostPage} />
       <Stack.Screen name="Search" component={SearchPage} />
+      <Stack.Screen name="ProductDetail" component={ProductDetail} />
     </Stack.Navigator>
   );
 };
@@ -55,6 +58,7 @@ const ProfileStack = () => {
       <Stack.Screen name="Post" component={PostPage} />
       <Stack.Screen name="SellerDashboard" component={SellerDashboard} />
       <Stack.Screen name="AddProduct" component={AddProduct} />
+      <Stack.Screen name="ProductDetail" component={ProductDetail} />
     </Stack.Navigator>
   );
 };

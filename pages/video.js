@@ -1,5 +1,5 @@
 import React, { useEffect, useState, memo } from "react";
-import { View, StyleSheet, Text, TouchableOpacity, Modal, Platform, TouchableWithoutFeedback, Clipboard, Alert, ActivityIndicator, PermissionsAndroid } from "react-native";
+import { View, StyleSheet, Text, TouchableOpacity, Modal, Platform, TouchableWithoutFeedback, Clipboard, Alert, ActivityIndicator, PermissionsAndroid, Image } from "react-native";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { Audio } from 'expo-av';
 import { Ionicons } from "@expo/vector-icons";
@@ -224,7 +224,35 @@ const VideoItem = memo(({ item, isActive, style, updateStats = null, setComments
                 }}
             />
 
-            <TouchableOpacity style={styles.overlayContainer} onPress={video_tapped}>
+            <TouchableOpacity style={styles.overlayContainer} onPress={video_tapped} activeOpacity={1}>
+                {/* Product Card Overlay (Pinduoduo style) */}
+                {item.product && (
+                    <TouchableOpacity
+                        style={styles.productCard}
+                        activeOpacity={0.9}
+                        onPress={() => navigation.navigate("ProductDetail", { productId: item.product.id })}
+                    >
+                        {item.product.first_image && (
+                            <Image source={{ uri: item.product.first_image }} style={styles.productCardImage} />
+                        )}
+                        <View style={styles.productCardInfo}>
+                            <Text style={styles.productCardTitle} numberOfLines={1}>{item.product.title}</Text>
+                            <View style={styles.productCardPriceRow}>
+                                <Text style={styles.productCardPrice}>{item.product.price} сом</Text>
+                                {item.product.discount_percent > 0 && (
+                                    <Text style={styles.productCardOldPrice}>{item.product.original_price} сом</Text>
+                                )}
+                            </View>
+                            {item.product.seller_name && (
+                                <Text style={styles.productCardSeller} numberOfLines={1}>{item.product.seller_name}</Text>
+                            )}
+                        </View>
+                        <View style={styles.productCardBuyBtn}>
+                            <Text style={styles.productCardBuyText}>Сатып алуу</Text>
+                        </View>
+                    </TouchableOpacity>
+                )}
+
                 <View style={styles.textContainer}>
                     <TouchableOpacity onPress={() => navigation.navigate("FeedProfile", { username: item.user })}>
                         <Text style={styles.title}>{"@" + item.user}</Text>
@@ -453,6 +481,63 @@ const styles = StyleSheet.create({
     cancelButtonText: {
         fontSize: 16,
         color: '#333',
+        fontWeight: 'bold',
+    },
+    // Product Card Overlay (Pinduoduo style)
+    productCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 12,
+        padding: 10,
+        marginBottom: 10,
+    },
+    productCardImage: {
+        width: 56,
+        height: 56,
+        borderRadius: 8,
+        backgroundColor: '#f0f0f0',
+    },
+    productCardInfo: {
+        flex: 1,
+        marginLeft: 10,
+        marginRight: 8,
+    },
+    productCardTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+    },
+    productCardPriceRow: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        marginTop: 2,
+    },
+    productCardPrice: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#ff4757',
+    },
+    productCardOldPrice: {
+        fontSize: 12,
+        color: '#999',
+        textDecorationLine: 'line-through',
+        marginLeft: 6,
+    },
+    productCardSeller: {
+        fontSize: 11,
+        color: '#999',
+        marginTop: 2,
+    },
+    productCardBuyBtn: {
+        backgroundColor: '#ff4757',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
+    },
+    productCardBuyText: {
+        color: '#fff',
+        fontSize: 13,
         fontWeight: 'bold',
     },
 });
