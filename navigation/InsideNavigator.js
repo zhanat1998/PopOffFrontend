@@ -9,7 +9,6 @@ import { Ionicons } from "@expo/vector-icons";
 import HomePage from "../pages/homePage";
 import Feed from "../pages/feed";
 import ProfilePage from "../pages/profilePage";
-import CreateScreen from "../pages/create";
 import PostPage from "../pages/post";
 import SearchPage from "../pages/search";
 import FeedProfile from "../pages/feedProfile";
@@ -76,8 +75,6 @@ export default function InsideNavigator() {
             iconName = focused ? "play-circle" : "play-circle-outline";
           } else if (route.name === "Sale") {
             iconName = focused ? "pricetag" : "pricetag-outline";
-          } else if (route.name === "Create") {
-            iconName = focused ? "add-circle" : "add-circle-outline";
           } else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
           }
@@ -120,13 +117,6 @@ export default function InsideNavigator() {
         component={SalePage}
         options={{
           tabBarLabel: "Скидки",
-        }}
-      />
-      <Tab.Screen
-        name="Create"
-        component={CreateScreen}
-        options={{
-          tabBarLabel: "Создать",
         }}
       />
       <Tab.Screen
