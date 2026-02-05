@@ -85,11 +85,11 @@ const UploadProgressScreen = () => {
       // Get presigned URL for thumbnail
       const baseName = asset.uri.split('/').pop().split('.')[0];
       const response = await axios.post('/media/upload/', {
-        base_name: baseName,
-        type: 'image/jpeg',
+        fileName: baseName,
+        fileType: 'image/jpeg',
       });
 
-      const { upload_url, file_path } = response.data;
+      const { thumb_url: upload_url, thumb_file_path: file_path } = response.data;
 
       // Upload thumbnail to R2
       const thumbnailBlob = await (await fetch(thumbnailUri)).blob();
