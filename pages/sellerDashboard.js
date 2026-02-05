@@ -35,7 +35,11 @@ const SellerDashboard = () => {
 
   useEffect(() => {
     checkSellerStatus();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', () => {
+      checkSellerStatus();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const checkSellerStatus = async () => {
     try {

@@ -85,7 +85,9 @@ const AddProduct = () => {
       formData.append("price", price);
       formData.append("original_price", originalPrice || price);
       formData.append("stock", stock || "0");
-      formData.append("category_id", selectedCategory);
+      if (selectedCategory) {
+        formData.append("category_id", selectedCategory);
+      }
 
       // Сүрөттөрдү кошуу
       images.forEach((uri, index) => {
@@ -96,15 +98,23 @@ const AddProduct = () => {
         });
       });
 
-      await axios.post("/seller/products/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      // Authorization header менен жөнөтүү
+      const response = await axios.post("/seller/products/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        transformRequest: (data, headers) => {
+          return formData;
+        },
       });
 
       Alert.alert("Ийгилик!", "Товар кошулду", [
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
-      Alert.alert("Ката", error.response?.data?.message || "Бир жаат кетти");
+      console.log("Product error:", error.response?.data || error.message);
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail || "Бир жаат кетти";
+      Alert.alert("Ката", errorMsg);
     } finally {
       setLoading(false);
     }

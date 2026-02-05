@@ -9,6 +9,7 @@ import { KeyboardAvoidingView } from 'react-native';
 import { Keyboard, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Linking } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 
 const RegisterScreen = () => {
 
@@ -22,68 +23,129 @@ const RegisterScreen = () => {
     const [error_message, setError] = useState(null);
 
     const dispatch = useDispatch();
-
-    const createAccount = () => {
-        console.log('create account');
-        handleResponse(false);
-    }
-
     const navigation = useNavigation();
 
-    const handleResponse = async (login) => {
+    // Валидация
+    const validateForm = () => {
+        if (!username.trim()) {
+            setError("Колдонуучу атын жазыңыз");
+            return false;
+        }
+        if (username.length < 3) {
+            setError("Колдонуучу аты 3 символдон көп болуш керек");
+            return false;
+        }
+        if (!email.trim()) {
+            setError("Email жазыңыз");
+            return false;
+        }
+        if (!email.includes('@') || !email.includes('.')) {
+            setError("Туура email жазыңыз");
+            return false;
+        }
+        if (!password.trim()) {
+            setError("Сырсөз жазыңыз");
+            return false;
+        }
+        if (password.length < 6) {
+            setError("Сырсөз 6 символдон көп болуш керек");
+            return false;
+        }
+        if (!agreed) {
+            setError("Шарттарды кабыл алыңыз");
+            return false;
+        }
+        return true;
+    };
 
-        console.log('username:', username);
-        console.log('password:', password);
+    const createAccount = async () => {
+        // Валидация
+        if (!validateForm()) {
+            return;
+        }
 
         setLoading(true);
         setError(null);
 
-        const response = await axios.post(`/auth/register/`, { username, email, password, phoneNumber })
-            .then(response => {
-                console.log(response.data);
-                const { token, user } = response.data;
-                axios.defaults.headers.common['Authorization'] = `Token ${token}`;
-                dispatch(loginAction({ username })); // Set the Redux state with the username
-                navigation.navigate("Inside")
-            })
-            .catch(error => {
-                console.log(error);
-
-                user_message = error.message;
-
-                if (!error.response) {
-                    setError("Network Error");
-                    setLoading(false);
-                    return;
-                }
-
-                const message = error.response.data;
-                console.log(message);
-                if (message['non_field_errors']) {
-                    user_message = message['non_field_errors'][0];
-                }
-                else if (message['username']) {
-                    user_message = "Username not specified";
-                }
-                else if (message['email']) {
-                    if (message['email'][0] === "Enter a valid email address.")
-                        user_message = "Invalid email address";
-                    else
-                        user_message = "Email not specified";
-                }
-                else if (message['password']) {
-                    user_message = "Password not specified";
-                }
-                else if (error.code === 'ERR_BAD_RESPONSE') {
-                    // could be other things
-                    user_message = "Account with username or email already exists";
-                }
-
-                setError(user_message);
+        try {
+            const response = await axios.post('/auth/register/', {
+                username: username.trim(),
+                email: email.trim().toLowerCase(),
+                password,
+                phone_number: phoneNumber
             });
-        
+
+            console.log('Register success:', response.data);
+            const { token } = response.data;
+
+            if (!token) {
+                setError("Сервер катасы: токен жок");
+                setLoading(false);
+                return;
+            }
+
+            // Token сактоо
+            if (Platform.OS !== 'web') {
+                await SecureStore.setItemAsync("user_token", token);
+            }
+
+            axios.defaults.headers.common['Authorization'] = `Token ${token}`;
+            dispatch(loginAction({ username: username.trim() }));
+            navigation.navigate("Inside");
+
+        } catch (error) {
+            console.log('Register error:', error);
+
+            // Дароо лоадерди токтотуу
+            setLoading(false);
+
+            // Эгер жооп жок болсо - тармак катасы
+            if (!error.response) {
+                if (error.code === 'ERR_NETWORK') {
+                    setError("Интернет байланышы жок");
+                } else {
+                    setError("Серверге туташуу мүмкүн эмес");
+                }
+                return;
+            }
+
+            // Сервер ката жооп берди
+            const status = error.response.status;
+            const data = error.response.data;
+
+            console.log('Error status:', status);
+            console.log('Error data:', data);
+
+            // Backend'ден келген катаны түз көрсөтүү
+            if (status === 400) {
+                // Backend кыргызча жооп берет
+                if (data.username) {
+                    setError(data.username[0]);
+                } else if (data.email) {
+                    setError(data.email[0]);
+                } else if (data.password) {
+                    setError(data.password[0]);
+                } else if (data.non_field_errors) {
+                    setError(data.non_field_errors[0]);
+                } else if (data.detail) {
+                    setError(data.detail);
+                } else if (data.error) {
+                    setError(data.error);
+                } else {
+                    setError("Маалыматтарды текшериңиз");
+                }
+            } else if (status === 500) {
+                setError("Сервер катасы");
+            } else if (status === 503) {
+                setError("Сервер убактылуу иштебей жатат");
+            } else {
+                setError(`Ката: ${status}`);
+            }
+            return;
+        }
+
         setLoading(false);
-    }
+    };
 
     return (
         <SafeAreaView style={[PrimaryStyles.screen_container, {justifyContent: 'center', alignItems: 'center'}]}>
@@ -93,15 +155,44 @@ const RegisterScreen = () => {
                     behavior={Platform.OS === "ios" ? "padding" : undefined}
                 keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}>
 
-                {/*input fields*/}        
-                <TextInput placeholder='Username' value={username} style={PrimaryStyles.input} onChangeText={text => setUsername(text)} />
-                <TextInput placeholder='Email' value={email} style={PrimaryStyles.input} onChangeText={text => setEmail(text)} />
-                <TextInput placeholder='Phone Number' value={phoneNumber} style={PrimaryStyles.input} onChangeText={text => setPhoneNumber(text)} inputMode='numeric' keyboardType='numeric' />
-                <TextInput placeholder='Password' value={password} style={PrimaryStyles.input} secureTextEntry={true} onChangeText={text => setPassword(text)} />
+                {/*input fields*/}
+                <TextInput
+                    placeholder='Колдонуучу аты'
+                    value={username}
+                    style={PrimaryStyles.input}
+                    onChangeText={text => { setUsername(text); setError(null); }}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                />
+                <TextInput
+                    placeholder='Email'
+                    value={email}
+                    style={PrimaryStyles.input}
+                    onChangeText={text => { setEmail(text); setError(null); }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                />
+                <TextInput
+                    placeholder='Телефон номери (милдеттүү эмес)'
+                    value={phoneNumber}
+                    style={PrimaryStyles.input}
+                    onChangeText={text => { setPhoneNumber(text); setError(null); }}
+                    inputMode='numeric'
+                    keyboardType='numeric'
+                />
+                <TextInput
+                    placeholder='Сырсөз (6+ символ)'
+                    value={password}
+                    style={PrimaryStyles.input}
+                    secureTextEntry={true}
+                    onChangeText={text => { setPassword(text); setError(null); }}
+                />
+
                 {/* Terms of Service Checkbox */}
                 <TouchableOpacity
                     style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}
-                    onPress={() => setAgreed(!agreed)}
+                    onPress={() => { setAgreed(!agreed); setError(null); }}
                     disabled={loading}
                 >
                     <View style={{
@@ -110,38 +201,69 @@ const RegisterScreen = () => {
                         {agreed && <Ionicons name="checkmark" size={18} color="white" />}
                     </View>
                     <Text style={{ color: 'white', flex: 1, flexWrap: 'wrap' }}>
-                        I agree to the{' '}
+                        Мен{' '}
                         <Text style={{ color: 'rgb(255, 36, 83)', textDecorationLine: 'underline' }} onPress={() => {
                             Linking.openURL('https://alder-phlox-1e6.notion.site/PopOff-Terms-of-Service-1f95bd204ac180049762d7257a6880c0');
                         }}>
-                            Terms of Service
+                            Колдонуу шарттарын
                         </Text>
-                        {' '}and{' '}
+                        {' '}жана{' '}
                         <Text style={{ color: 'rgb(255, 36, 83)', textDecorationLine: 'underline' }} onPress={() => {
                             Linking.openURL('https://alder-phlox-1e6.notion.site/Privacy-Policy-1f65bd204ac18055ad65db63b46b677a');
                         }}>
-                            Privacy Policy
+                            Купуялык саясатын
                         </Text>
+                        {' '}кабыл алам
                     </Text>
                 </TouchableOpacity>
 
-                {error_message && <Text style={PrimaryStyles.error}>{error_message}</Text>}                    
+                {error_message && (
+                    <View style={styles.errorContainer}>
+                        <Ionicons name="alert-circle" size={20} color="#ff4757" />
+                        <Text style={styles.errorText}>{error_message}</Text>
+                    </View>
+                )}
 
-                <TouchableOpacity onPress={() => createAccount()} disabled={loading || !agreed} style={[PrimaryStyles.button, (!agreed ? { opacity: 0.5 } : {})]}>
-                    {loading ? <ActivityIndicator size="large" color="white" style={{ margin: 10 }} /> : <Text style={PrimaryStyles.button_text} > Create Account </Text>}
+                <TouchableOpacity
+                    onPress={createAccount}
+                    disabled={loading}
+                    style={[PrimaryStyles.button, (loading ? { opacity: 0.7 } : {})]}
+                >
+                    {loading ? (
+                        <ActivityIndicator size="small" color="white" style={{ margin: 10 }} />
+                    ) : (
+                        <Text style={PrimaryStyles.button_text}>Катталуу</Text>
+                    )}
                 </TouchableOpacity>
+
                 <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={loading}>
-                    <Text style={PrimaryStyles.button_text} > I already have an account </Text>
+                    <Text style={PrimaryStyles.button_text}>Аккаунтум бар</Text>
                 </TouchableOpacity>
-                    
-                {/*loading and error messages*/}
-                {loading && <ActivityIndicator size="large" color="black" style={{ margin: 10, marginRight: "auto"  }} />}
 
             </KeyboardAvoidingView>
             </TouchableWithoutFeedback>
 
         </SafeAreaView>
     );
-}
+};
+
+const styles = StyleSheet.create({
+    errorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 71, 87, 0.1)',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 10,
+        marginVertical: 10,
+        width: '100%',
+    },
+    errorText: {
+        color: '#ff4757',
+        marginLeft: 10,
+        fontSize: 14,
+        flex: 1,
+    },
+});
 
 export default RegisterScreen;
